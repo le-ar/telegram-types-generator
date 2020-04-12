@@ -8,7 +8,8 @@
     "telegram-types-generator": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublish": "tsc"
   },
   "author": "le-ar",
   "license": "MIT",
