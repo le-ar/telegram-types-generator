@@ -91,16 +91,14 @@ class BuilderFile {
 
             let param = params[paramName];
 
-            let operator = (param.optional ? '?:' : ':');
+            let operator = ':';
 
             let type = param.type;
             if (type === 'True' || type === 'False') {
-                if (param.optional) {
-                    type = 'boolean';
-                } else {
-                    operator += ' boolean =';
-                    type = type.toLowerCase();
-                }
+                type = type.toLowerCase();
+            }
+            if (param.optional) {
+                type += ' | null';
             }
 
             result += '    private _' + param.name + operator + ' ' + type + ';\n';
@@ -115,11 +113,11 @@ class BuilderFile {
 
                 let type = param.type;
                 if (type === 'True' || type === 'False') {
-                    type = 'boolean';
+                    type = type.toLowerCase();
                 }
 
                 if (param.type !== 'True' && param.type !== 'False' || param.optional) {
-                    result += space + param.name + (param.optional ? '?' : '') + ':' + ' ' + type + ';\n';
+                    result += space + param.name + (param.optional ? '?' : '') + ':' + ' ' + type + (param.optional ? ' | null' : '') + ';\n';
                 }
             }
             result += '    }) {\n'
@@ -127,32 +125,58 @@ class BuilderFile {
             for (let paramName in params) {
                 let param = params[paramName];
 
-                if ((param.type === 'True' || param.type === 'False') && !param.optional) {
-                    continue;
-                }
-
                 let value = 'params.' + param.name;
+
                 if (param.type === 'True' || param.type === 'False') {
                     value = param.type.toLowerCase();
-                    result += space + 'if (typeof params.' + param.name + ' !== \'undefined\') {\n'
-                    result += space + '    this._' + param.name + ' = ' + value + ';\n';
-                    result += space + '}\n'
-                } else {
-                    result += space + 'this._' + param.name + ' = ' + value + ';\n';
-
-                    if (param.optional) {
-                        result += space + 'if (typeof params.' + param.name + ' === \'undefined\') {\n'
-                        result += space + '    this._' + param.name + ' = null;\n';
-                        result += space + '}\n'
-                    }
                 }
+
+                let setValueString = space + 'this._' + param.name + ' = ' + value + ';\n';
+                if (param.optional) {
+                    setValueString = space + 'if (typeof params.' + param.name + ' === \'undefined\' || params.' + param.name + ' === null) {\n' +
+                        space + '    this._' + param.name + ' = null;\n' +
+                        space + '} else {\n' +
+                        '    ' + setValueString +
+                        space + '}\n';
+                }
+
+                result += setValueString;
             }
 
-            result += '    }\n'
+            result += '    }\n\n';
+            result += this.buildGetters(params);
         }
 
         result += '}\n\n';
         result += 'export default ' + className + ';';
+        return result;
+    }
+
+    private static buildGetters(
+        params: {
+            [key: string]: {
+                name: string;
+                type: string;
+                description: string;
+                optional: boolean;
+            }
+        }): string {
+        let result = '';
+
+        for (let paramName in params) {
+            let param = params[paramName];
+            let type = param.type;
+            if (type === 'True' || type === 'False') {
+                type = type.toLowerCase();
+            }
+
+            let returnString = '        return this._' + param.name + ';\n';
+
+            result += '    get ' + param.name + '(): ' + type + ' ' + (param.optional ? '| null ' : '') + '{\n';
+            result += returnString;
+            result += '    }\n';
+        }
+
         return result;
     }
 
