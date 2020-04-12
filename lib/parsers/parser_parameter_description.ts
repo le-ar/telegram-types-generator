@@ -1,6 +1,4 @@
-import ParserHtml from "./parser_html";
-
-class ParserParameterDescription implements ParserHtml {
+class ParserParameterDescription {
     parseHtmlToObject(html: string): { [key: string]: any } {
         return {};
     }

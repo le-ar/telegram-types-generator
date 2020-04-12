@@ -1,4 +1,4 @@
-import ParserHtml from "./parser_html";
+import { ParserHtml } from "./parser_html";
 
 class ParserTypesBlock implements ParserHtml {
     parserParameters: ParserHtml;
@@ -12,6 +12,17 @@ class ParserTypesBlock implements ParserHtml {
 
         result['name'] = this.parseName(html).name;
 
+        result['parameters'] = this.parseParameters(html);
+
+        return result;
+    }
+
+    private parseParameters(html: string): any {
+        let result = {};
+        let startParamsIndex = html.indexOf('<tbody>');
+        if (startParamsIndex !== -1) {
+            result = this.parserParameters.parseHtmlToObject(html.slice(startParamsIndex + 7, html.indexOf('</tbody>')).trim());
+        }
         return result;
     }
 

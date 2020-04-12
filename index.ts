@@ -1,10 +1,16 @@
 import TelegramApi from "./lib/api/telegram_api";
 import ParserTypesBlocks from "./lib/parsers/parser_types_blocks";
 import ParserTypesBlock from "./lib/parsers/parser_types_block";
+import ParserParameters from "./lib/parsers/parser_parameters";
+import ParserParameter from "./lib/parsers/parser_parameter";
 
 (async () => {
     let telegramApi = new TelegramApi();
-    let parserTypesBlock = new ParserTypesBlock();
+    let parserParameter = new ParserParameter();
+    let parserParameters = new ParserParameters(parserParameter);
+    let parserTypesBlock = new ParserTypesBlock(parserParameters);
     let parserTypesBlocks = new ParserTypesBlocks(parserTypesBlock);
-    console.log(parserTypesBlocks.parseHtmlToObject(await new TelegramApi().getHtml()));
+    let types = parserTypesBlocks.parseHtmlToObject(await new TelegramApi().getHtml());
+
+    console.log(types);
 })()

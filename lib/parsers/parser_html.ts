@@ -2,4 +2,8 @@ interface ParserHtml {
     parseHtmlToObject(html: string): { [key: string]: any };
 }
 
-export default ParserHtml
+interface ParserHtmlType {
+    parseHtmlToObject(html: string): { name: string, type: string, description: string, optional: boolean };
+}
+
+export { ParserHtml, ParserHtmlType };
