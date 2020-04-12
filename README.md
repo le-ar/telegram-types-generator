@@ -1,5 +1,10 @@
 Typescript classes code generator for [Telegram types](https://core.telegram.org/bots/api)
 
+### Default output dirs:
+```./etities/``` for Classes
+
+```./serialize/``` for Serialize
+
 ## Install
 
 ```
