@@ -1,0 +1,16 @@
+{
+  "name": "telegram-bot-ts-types-generator",
+  "version": "0.0.0",
+  "description": "Auto generate classes for typescript from https://core.telegram.org/bots/api with Serializable to and from json ",
+  "main": "build/index.js",
+  "author": "le-ar",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node-fetch": "^2.5.6",
+    "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "jest": "^25.2.4",
+    "typescript": "^3.8.3"
+  }
+}
