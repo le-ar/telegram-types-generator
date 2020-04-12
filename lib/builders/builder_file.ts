@@ -88,8 +88,22 @@ class BuilderFile {
         let hasParams = false;
         for (let paramName in params) {
             hasParams = true;
+
             let param = params[paramName];
-            result += '    ' + param.name + (param.optional ? '?' : '') + ':' + ' ' + param.type + ';\n';
+
+            let operator = (param.optional ? '?:' : ':');
+
+            let type = param.type;
+            if (type === 'True' || type === 'False') {
+                if (param.optional) {
+                    type = 'boolean';
+                } else {
+                    operator += ' boolean =';
+                    type = type.toLowerCase();
+                }
+            }
+
+            result += '    private _' + param.name + operator + ' ' + type + ';\n';
         }
 
         if (hasParams) {
@@ -98,18 +112,39 @@ class BuilderFile {
 
             for (let paramName in params) {
                 let param = params[paramName];
-                result += space + param.name + (param.optional ? '?' : '') + ':' + ' ' + param.type + ';\n';
+
+                let type = param.type;
+                if (type === 'True' || type === 'False') {
+                    type = 'boolean';
+                }
+
+                if (param.type !== 'True' && param.type !== 'False' || param.optional) {
+                    result += space + param.name + (param.optional ? '?' : '') + ':' + ' ' + type + ';\n';
+                }
             }
             result += '    }) {\n'
 
             for (let paramName in params) {
                 let param = params[paramName];
-                result += space + 'this.' + param.name + ' = params.' + param.name + ';\n';
 
-                if (param.optional) {
-                    result += space + 'if (typeof params.' + param.name + ' === \'undefined\') {\n'
-                    result += space + '    this.' + param.name + ' = null;\n';
+                if ((param.type === 'True' || param.type === 'False') && !param.optional) {
+                    continue;
+                }
+
+                let value = 'params.' + param.name;
+                if (param.type === 'True' || param.type === 'False') {
+                    value = param.type.toLowerCase();
+                    result += space + 'if (typeof params.' + param.name + ' !== \'undefined\') {\n'
+                    result += space + '    this._' + param.name + ' = ' + value + ';\n';
                     result += space + '}\n'
+                } else {
+                    result += space + 'this._' + param.name + ' = ' + value + ';\n';
+
+                    if (param.optional) {
+                        result += space + 'if (typeof params.' + param.name + ' === \'undefined\') {\n'
+                        result += space + '    this._' + param.name + ' = null;\n';
+                        result += space + '}\n'
+                    }
                 }
             }
 
