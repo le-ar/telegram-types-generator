@@ -27,7 +27,7 @@ class BuilderFile {
         for (let param in type.parameters) {
             params[param] = type.parameters[param];
             params[param].name = this.snakeCaseToCamelCase(params[param].name);
-            params[param].type = this.parseParamTypeAndAddImort(type.parameters[param].type, imports);
+            params[param].type = this.parseParamTypeAndAddImort(type.name, type.parameters[param].type, imports);
         }
 
         let fileText = this.build(type.name, imports, params);
@@ -157,6 +157,7 @@ class BuilderFile {
     }
 
     private static parseParamTypeAndAddImort(
+        name: string,
         type: string,
         imports: { [key: string]: string }
     ) {
@@ -174,7 +175,7 @@ class BuilderFile {
         }
 
         if (type.startsWith('Array of')) {
-            return this.parseParamTypeAndAddImort(type.slice(8).trim(), imports) + '[]';
+            return this.parseParamTypeAndAddImort(name, type.slice(8).trim(), imports) + '[]';
         }
 
         let endIndexOfType = type.indexOf('</a>');
@@ -182,7 +183,9 @@ class BuilderFile {
             throw new Error('Wrong type: ' + type);
         }
         let paramType = type.slice(type.indexOf('>') + 1, endIndexOfType).trim();
-        imports['./' + this.pascalCaseToSnakeCase(paramType)] = paramType;
+        if (paramType !== name) {
+            imports['./' + this.pascalCaseToSnakeCase(paramType)] = paramType;
+        }
         return paramType;
     }
 
