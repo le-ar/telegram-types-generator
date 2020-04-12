@@ -11,6 +11,9 @@ class ParserTypesBlock implements ParserHtml {
         let result = {};
 
         result['name'] = this.parseName(html).name;
+        if (result['name'][0].toUpperCase() !== result['name'][0]) {
+            return result;
+        }
 
         result['parameters'] = this.parseParameters(html);
 

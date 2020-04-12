@@ -8,19 +8,7 @@ class TelegramApi {
         }
 
         let html = await response.text();
-
-        let indexOfStartBlock = html.indexOf('name="available-types"');
-        if (indexOfStartBlock === -1) {
-            throw new Error('Invalid html');
-        }
-
-        let htmlBlock = html.slice(indexOfStartBlock);
-        let indexOfEndBlock = htmlBlock.indexOf('<h3>');
-        if (indexOfEndBlock !== -1) {
-            htmlBlock = htmlBlock.slice(0, indexOfEndBlock);
-        }
-
-        return htmlBlock;
+        return html;
     }
 }
 

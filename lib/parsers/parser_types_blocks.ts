@@ -15,7 +15,10 @@ class ParserTypesBlocks implements ParserHtml {
             let parsed = this.parseBlock(html, startIndexOfBlock);
 
             startIndexOfBlock = parsed.endIndex;
-            result.types.push(parsed.block);
+            if (parsed.block.name.indexOf(' ') === -1 &&
+                parsed.block.name[0].toUpperCase() === parsed.block.name[0]) {
+                result.types.push(parsed.block);
+            }
         }
 
         return result;
@@ -28,10 +31,10 @@ class ParserTypesBlocks implements ParserHtml {
             endIndexOfBlock = html.length;
         }
 
-        let blockHtml = html.slice(startIndexOfBlock, endIndexOfBlock + 5);
+        let blockHtml = html.slice(startIndexOfBlock, endIndexOfBlock);
         let block = this.parserTypesBlock.parseHtmlToObject(blockHtml.trim());
         return {
-            endIndex: endIndexOfBlock + 5,
+            endIndex: endIndexOfBlock,
             block: block
         };
     }

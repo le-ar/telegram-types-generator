@@ -1,10 +1,10 @@
 {
-  "name": "telegram-bot-ts-types-generator",
+  "name": "telegram-types-generator",
   "version": "0.0.0",
   "description": "Auto generate classes for typescript from https://core.telegram.org/bots/api with Serializable to and from json ",
   "main": "build/index.js",
   "bin": {
-    "gen-tg-bot-types": "./build/index.js"
+    "telegram-types-generator": "./build/index.js"
   },
   "scripts": {
     "build": "tsc"

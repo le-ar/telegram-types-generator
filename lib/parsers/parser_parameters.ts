@@ -27,6 +27,7 @@ class ParserParameters implements ParserHtml {
             name: string;
             type: string;
             description: string;
+            optional: boolean;
         }
     } {
         let startIndexOfBlock = html.indexOf('<tr>', startIndex);
