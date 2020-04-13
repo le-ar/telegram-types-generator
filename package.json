@@ -3,6 +3,18 @@
   "version": "1.1.0",
   "description": "Auto generate classes for typescript from https://core.telegram.org/bots/api with Serializable to and from json ",
   "repository": "https://github.com/le-ar/telegram-types-generator",
+  "keywords": [
+    "telegram",
+    "bot",
+    "typescript",
+    "ts",
+    "generator",
+    "types",
+    "telegram-types",
+    "typescript-types",
+    "telegram-typescript",
+    "telegram-typescript-types"
+  ],
   "main": "build/index.js",
   "bin": {
     "telegram-types-generator": "./build/index.js"
