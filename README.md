@@ -27,12 +27,9 @@ Run ```telegram-types-generator``` in directory where you want to generate class
 import ChatSerializer from "./serialize/chat_serializer";
 import Chat from "./entities/chat";
 
-let chat = ChatSerializer.fromJson({
-    id: 123,
-    type: 'private',
-    username: 'username',
-    first_name: 'Name',
-});
+let json = '{"id":123,"type":"private","username":"username","first_name":"Name"}';
+
+let chat = ChatSerializer.fromJson(JSON.parse(json));
 
 console.log(chat); /* Will print
 Chat {
@@ -40,7 +37,7 @@ Chat {
   _type: 'private',
   _title: null,
   _username: 'username',
-  _firstName: null,
+  _firstName: 'Name',
   _lastName: null,
   _photo: null,
   _description: null,
@@ -50,10 +47,10 @@ Chat {
   _slowModeDelay: null,
   _stickerSetName: null,
   _canSetStickerSet: null
-*/}
+}*/
 
 console.log(chat instanceof Chat); // Will print true
 
 let jsonChat = ChatSerializer.toJsonString(chat);
-console.log(jsonChat); // Will print {"id":123,"type":"private","username":"username"}
+console.log(jsonChat); // Will print {"id":123,"type":"private","username":"username","first_name":"Name"}
 ```
