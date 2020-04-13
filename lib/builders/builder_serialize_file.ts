@@ -79,6 +79,15 @@ class Serializer<T> {
             }
             return result;
         }
+        if (type.indexOf(' | ') !== -1) {
+            let params = type.split(' | ');
+            for (let currType of params) {
+                if (currType in Serializer.Serializers) {
+                    return Serializer.Serializers[currType].fromJson(value);
+                }
+            }
+        }
+
         return value;
     }
 
@@ -86,7 +95,8 @@ class Serializer<T> {
         return (
             json !== null &&
             typeof json === 'object' &&
-            Object.keys(this.constructorParams).every(p => !this.constructorParams[p].required || this.paramsCamelToSnakeCase[p] in json)
+            Object.keys(this.constructorParams).every(p => !this.constructorParams[p].required || this.paramsCamelToSnakeCase[p] in json) &&
+            Object.keys(json).every(p => this.paramsSnakeToCamelCase[p] in this.constructorParams)
         );
     }
 
@@ -102,6 +112,9 @@ class Serializer<T> {
             let param = this.constructorParams[paramName];
             if (typeof jsonModel[paramName] !== 'undefined' && jsonModel[paramName] !== null) {
                 let newParam = jsonModel[paramName];
+                if (newParam instanceof Buffer) {
+                    throw new Error('You can\\'t serialize Buffer to json. Use "multipart/form-data" instead');
+                }
                 try {
                     newParam = this.serialize(newParam, param.type);
                     if (newParam === null) {
@@ -133,7 +146,16 @@ class Serializer<T> {
             }
             return result;
         }
-        return value;
+        if (type.indexOf(' | ') !== -1) {
+            let params = type.split(' | ');
+            for (let currType of params) {
+                if (currType in Serializer.Serializers) {
+                    return Serializer.Serializers[currType].toJsonObject(value);
+                }
+            }
+        }
+
+        return JSON.stringify(value);
     }
 }
 
@@ -150,17 +172,20 @@ class BuilderSerializeFile {
         fs.writeFileSync(process.cwd() + '/serialize/serializer.ts', Serializer);
     }
 
-    static buildFile(type: {
-        name: string,
-        parameters: {
-            [key: string]: {
-                name: string;
-                type: string;
-                description: string;
-                optional: boolean;
+    static buildFile(
+        type: {
+            name: string,
+            parameters: {
+                [key: string]: {
+                    name: string;
+                    type: string;
+                    description: string;
+                    optional: boolean;
+                }
             }
-        }
-    }) {
+        },
+        inheritances: { [key: string]: string }
+    ) {
         // Key is path. Value is Class Name
         let imports: { [key: string]: string } = {};
         let params: {
@@ -172,13 +197,24 @@ class BuilderSerializeFile {
             }
         } = this.convertParamsAndAddImport(type.name, JSON.parse(JSON.stringify(type.parameters)), imports);
 
+        let reverseInheritances: any = {};
+        for (let heir in inheritances) {
+            if (!(inheritances[heir] in reverseInheritances)) {
+                reverseInheritances[inheritances[heir]] = [];
+            }
+            reverseInheritances[inheritances[heir]].push(heir);
+        }
+        if (!(type.name in reverseInheritances)) {
+            reverseInheritances[type.name] = [];
+        }
+
         let result = '';
 
-        result = this.buildImports(type.name, imports);
+        result = this.buildImports(type.name, imports, reverseInheritances[type.name]);
         result += '\n';
         result += this.buildConstructorParams(params);
         result += '\n';
-        result += this.buildSeriazable(type.name);
+        result += this.buildSeriazable(type.name, reverseInheritances[type.name]);
         result += '\n';
         result += this.buildExport(type.name);
 
@@ -213,9 +249,6 @@ class BuilderSerializeFile {
         } {
         let newParams = {};
         for (let param in params) {
-            if (!params[param].optional && (params[param].type === 'True' || params[param].type === 'False')) {
-                continue;
-            }
             newParams[param] = params[param];
             newParams[param].name = this.snakeCaseToCamelCase(newParams[param].name);
             newParams[param].type = this.parseParamTypeAndAddImort(currentTypeName, params[param].type.trim(), imports);
@@ -264,7 +297,11 @@ class BuilderSerializeFile {
         return paramType;
     }
 
-    private static buildImports(currentClassName: string, imports: { [key: string]: string }): string {
+    private static buildImports(
+        currentClassName: string,
+        imports: { [key: string]: string },
+        reverseInheritances: string[]
+    ): string {
         let result = `import { Serializer, ConstructorParams } from './serializer';\n`;
         result += `import ` + currentClassName + ` from '../entities/` + this.pascalCaseToSnakeCase(currentClassName) + `';\n`;
 
@@ -272,6 +309,10 @@ class BuilderSerializeFile {
         for (let importSerialize in imports) {
             result += `import ` + imports[importSerialize] + ` from '` + importSerialize + `';\n`;
             init += `let _` + imports[importSerialize] + ` = ` + imports[importSerialize] + ';\n';
+        }
+        for (let importSerialize of reverseInheritances) {
+            result += `import ` + importSerialize + `Serializer from './` + this.pascalCaseToSnakeCase(importSerialize) + `_serializer';\n`;
+            init += `let _` + importSerialize + `Serializer = ` + importSerialize + 'Serializer;\n';
         }
 
         result += '\n' + init;
@@ -311,8 +352,36 @@ class BuilderSerializeFile {
         return result;
     }
 
-    private static buildSeriazable(currentClassName: string): string {
-        let result = `let ` + currentClassName + `Serializer = new Serializer<` + currentClassName + `>(` + currentClassName + `, '` + currentClassName + `', params);\n`;
+    private static buildSeriazable(currentClassName: string, heirs: string[]): string {
+        let result = '';
+        let constructorName = currentClassName;
+
+        if (heirs.length > 0) {
+            result += this.buildFabric(heirs);
+            result += '\n';
+            constructorName = 'fabric';
+        }
+
+        result += `let ` + currentClassName + `Serializer = new Serializer<` + currentClassName + `>(` + constructorName + `, '` + currentClassName + `', params);\n`;
+
+        return result;
+    }
+
+    private static buildFabric(heirs: string[]): string {
+        let result = 'class fabric {\n';
+        result += '    constructor(p?:any) {\n';
+
+        for (let heir of heirs) {
+            result += '        try {\n';
+            result += '            return _' + heir + 'Serializer.fromJson(p);\n';
+            result += '        } catch (e) {}\n';
+        }
+        if (heirs.length > 0) {
+            result += '\n';
+        }
+
+        result += '        throw new Error(\'Wrong json for types [' + heirs.join(', ') + ']. Json: \' + p + \'\\n\');\n';
+        result += '    }\n}\n';
 
         return result;
     }

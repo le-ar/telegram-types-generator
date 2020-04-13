@@ -12,7 +12,8 @@ class BuilderFile {
                     optional: boolean;
                 }
             }
-        }, inheritances: { [key: string]: string }
+        },
+        inheritances: { [key: string]: string }
     ) {
         // Key is path. Value is Class Name
         let imports: { [key: string]: string } = {};

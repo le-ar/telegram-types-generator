@@ -22,7 +22,7 @@ import BuilderSerializeFile from "./lib/builders/builder_serialize_file";
 
     BuilderSerializeFile.saveSerializerFile();
     for (let type of types['types']) {
-        BuilderSerializeFile.buildFile(type);
+        BuilderSerializeFile.buildFile(type, inheritances);
         BuilderFile.buildFile(type, inheritances);
     }
 })()
