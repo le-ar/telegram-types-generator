@@ -100,6 +100,32 @@ class Serializer<T> {
         );
     }
 
+    
+
+    checkParamsAndReturnInSnakeCaseIfOk(params: any): {
+        ok: boolean;
+        params?: { [key: string]: any };
+    } {
+        let ok = (
+            params !== null &&
+            typeof params === 'object' &&
+            Object.keys(this.constructorParams).every(p => !this.constructorParams[p].required || p in params) &&
+            Object.keys(params).every(p => p in this.constructorParams)
+        );
+        if (!ok) {
+            return { ok: false };
+        }
+
+        let snakeParams: { [key: string]: any } = {};
+        for (let param in params) {
+            snakeParams[this.paramsCamelToSnakeCase[param]] = params[param];
+        }
+        return {
+            ok: true,
+            params: snakeParams
+        };
+    }
+
     toJsonString(model: T): string {
         return JSON.stringify(this.toJsonObject(model));
     }
@@ -212,7 +238,7 @@ class BuilderSerializeFile {
 
         result = this.buildImports(type.name, imports, reverseInheritances[type.name]);
         result += '\n';
-        result += this.buildConstructorParams(params);
+        result += this.buildConstructorParams(params, reverseInheritances[type.name]);
         result += '\n';
         result += this.buildSeriazable(type.name, reverseInheritances[type.name]);
         result += '\n';
@@ -311,7 +337,7 @@ class BuilderSerializeFile {
             init += `let _` + imports[importSerialize] + ` = ` + imports[importSerialize] + ';\n';
         }
         for (let importSerialize of reverseInheritances) {
-            result += `import ` + importSerialize + `Serializer from './` + this.pascalCaseToSnakeCase(importSerialize) + `_serializer';\n`;
+            result += `import { ` + importSerialize + `Serializer, ` + importSerialize + `SerializerParams } from './` + this.pascalCaseToSnakeCase(importSerialize) + `_serializer';\n`;
             init += `let _` + importSerialize + `Serializer = ` + importSerialize + 'Serializer;\n';
         }
 
@@ -328,7 +354,9 @@ class BuilderSerializeFile {
                 description: string;
                 optional: boolean;
             }
-        }): string {
+        },
+        heirs: string[],
+    ): string {
         let result = `let params: ConstructorParams = {\n`;
 
         let paramsCount = Object.keys(parameters).length;
@@ -348,6 +376,15 @@ class BuilderSerializeFile {
         }
 
         result += `}\n`;
+
+        for (let heir of heirs) {
+            result += 'for (let param in ' + heir + 'SerializerParams) {\n';
+            result += '    params[param] = {\n';
+            result += '        required: false,\n';
+            result += '        type: ' + heir + 'SerializerParams[param].type\n';
+            result += '    };\n';
+            result += '}\n';
+        }
 
         return result;
     }
@@ -369,18 +406,22 @@ class BuilderSerializeFile {
 
     private static buildFabric(heirs: string[]): string {
         let result = 'class fabric {\n';
-        result += '    constructor(p?:any) {\n';
+        result += '    constructor(p?: any) {\n';
 
+        if (heirs.length > 0) {
+            result += '        let checkParams: { ok: boolean; params?: { [key: string]: any }; } = { ok: false };\n';
+        }
         for (let heir of heirs) {
-            result += '        try {\n';
-            result += '            return _' + heir + 'Serializer.fromJson(p);\n';
-            result += '        } catch (e) {}\n';
+            result += '        checkParams = _' + heir + 'Serializer.checkParamsAndReturnInSnakeCaseIfOk(p);\n';
+            result += '        if (checkParams.ok) {\n';
+            result += '            return _' + heir + 'Serializer.fromJson(checkParams.params);\n';
+            result += '        }\n';
         }
         if (heirs.length > 0) {
             result += '\n';
         }
 
-        result += '        throw new Error(\'Wrong json for types [' + heirs.join(', ') + ']. Json: \' + p + \'\\n\');\n';
+        result += '        throw new Error(\'Wrong json for types [' + heirs.join(', ') + ']. Json: \' + JSON.stringify(p) + \'\\n\');\n';
         result += '    }\n}\n';
 
         return result;
