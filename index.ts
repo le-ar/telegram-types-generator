@@ -14,12 +14,15 @@ import BuilderSerializeFile from "./lib/builders/builder_serialize_file";
     let parserParameters = new ParserParameters(parserParameter);
     let parserTypesBlock = new ParserTypesBlock(parserParameters);
     let parserTypesBlocks = new ParserTypesBlocks(parserTypesBlock);
-    let types = parserTypesBlocks.parseHtmlToObject((await telegramApi.getHtml()).trim());
 
+    // Key is heir. Value is inheritance  
+    let inheritances: { [key: string]: string } = {};
+
+    let types = parserTypesBlocks.parseHtmlToObject((await telegramApi.getHtml()).trim(), inheritances);
 
     BuilderSerializeFile.saveSerializerFile();
     for (let type of types['types']) {
         BuilderSerializeFile.buildFile(type);
-        BuilderFile.buildFile(type);
+        BuilderFile.buildFile(type, inheritances);
     }
 })()

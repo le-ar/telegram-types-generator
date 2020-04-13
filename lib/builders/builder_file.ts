@@ -1,17 +1,19 @@
 var fs = require('fs');
 
 class BuilderFile {
-    static buildFile(type: {
-        name: string,
-        parameters: {
-            [key: string]: {
-                name: string;
-                type: string;
-                description: string;
-                optional: boolean;
+    static buildFile(
+        type: {
+            name: string,
+            parameters: {
+                [key: string]: {
+                    name: string;
+                    type: string;
+                    description: string;
+                    optional: boolean;
+                }
             }
-        }
-    }) {
+        }, inheritances: { [key: string]: string }
+    ) {
         // Key is path. Value is Class Name
         let imports: { [key: string]: string } = {};
         let params: {
@@ -29,7 +31,7 @@ class BuilderFile {
             params[param].type = this.parseParamTypeAndAddImort(type.name, type.parameters[param].type, imports);
         }
 
-        let fileText = this.build(type.name, imports, params);
+        let fileText = this.build(type.name, imports, params, inheritances);
         this.saveToFile(process.cwd() + '/entities/' + this.pascalCaseToSnakeCase(type.name) + '.ts', fileText);
     }
 
@@ -50,19 +52,28 @@ class BuilderFile {
                 description: string;
                 optional: boolean;
             }
-        }
+        },
+        inheritances: { [key: string]: string }
     ): string {
         let result = '';
 
-        result += this.buildImports(imports);
+        result += this.buildImports(className, imports, inheritances);
 
-        result += this.buildClass(className, params);
+        result += this.buildClass(className, params, inheritances);
 
         return result;
     }
 
-    private static buildImports(imports: { [key: string]: string }): string {
+    private static buildImports(
+        className: string,
+        imports: { [key: string]: string },
+        inheritances: { [key: string]: string }
+    ): string {
         let result = '';
+
+        if (className in inheritances) {
+            result += 'import ' + inheritances[className] + ' from \'./' + this.pascalCaseToSnakeCase(inheritances[className]) + '\';\n'
+        }
 
         for (let importFile in imports) {
             result += 'import ' + imports[importFile] + ' from \'' + importFile + '\';\n';
@@ -80,9 +91,14 @@ class BuilderFile {
                 description: string;
                 optional: boolean;
             }
-        }
+        },
+        inheritances: { [key: string]: string }
     ): string {
-        let result = 'class ' + className + ' {\n';
+        let extendsString = '';
+        if (className in inheritances) {
+            extendsString = ' extends ' + inheritances[className];
+        }
+        let result = 'class ' + className + extendsString + ' {\n';
 
         let hasParams = false;
         for (let paramName in params) {
@@ -120,6 +136,10 @@ class BuilderFile {
                 }
             }
             result += '    }) {\n'
+
+            if (className in inheritances) {
+                result += '        super();\n';
+            }
 
             for (let paramName in params) {
                 let param = params[paramName];
@@ -201,12 +221,20 @@ class BuilderFile {
             return this.parseParamTypeAndAddImort(name, type.slice(8).trim(), imports) + '[]';
         }
 
+        if (type.indexOf(' or ') !== -1) {
+            let splitted = type.split(' or ');
+            return splitted.map((el) => this.parseParamTypeAndAddImort(name, el.trim(), imports)).join(' | ');
+        }
+
         let endIndexOfType = type.indexOf('</a>');
         if (endIndexOfType === -1) {
             throw new Error('Wrong type: ' + type);
         }
         let paramType = type.slice(type.indexOf('>') + 1, endIndexOfType).trim();
         if (paramType !== name) {
+            if (paramType === 'InputFile') {
+                return 'Buffer';
+            }
             imports['./' + this.pascalCaseToSnakeCase(paramType)] = paramType;
         }
         return paramType;

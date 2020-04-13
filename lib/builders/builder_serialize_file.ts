@@ -234,6 +234,9 @@ class BuilderSerializeFile {
         if (type === 'String') {
             return 'string';
         }
+        if (type === 'InputFile') {
+            return 'Buffer';
+        }
         if (type === 'Boolean' || type === 'True' || type === 'False') {
             return 'boolean';
         }
@@ -242,12 +245,20 @@ class BuilderSerializeFile {
             return this.parseParamTypeAndAddImort(currentTypeName, type.slice(8).trim(), imports) + '[]';
         }
 
+        if (type.indexOf(' or ') !== -1) {
+            let splitted = type.split(' or ');
+            return splitted.map((el) => this.parseParamTypeAndAddImort(currentTypeName, el.trim(), imports)).join(' | ');
+        }
+
         let endIndexOfType = type.indexOf('</a>');
         if (endIndexOfType === -1) {
             throw new Error('Wrong type: ' + type);
         }
         let paramType = type.slice(type.indexOf('>') + 1, endIndexOfType).trim();
         if (paramType !== currentTypeName) {
+            if (paramType === 'InputFile') {
+                return 'Buffer';
+            }
             imports['./' + this.pascalCaseToSnakeCase(paramType) + '_serializer'] = paramType + 'Serializer';
         }
         return paramType;

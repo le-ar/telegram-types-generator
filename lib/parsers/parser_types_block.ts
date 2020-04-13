@@ -7,16 +7,42 @@ class ParserTypesBlock implements ParserHtml {
         this.parserParameters = parserParameters;
     }
 
-    parseHtmlToObject(html: string): { [key: string]: any } {
+    parseHtmlToObject(html: string, inheritances?: { [key: string]: string }): { [key: string]: any } {
         let result = {};
 
         result['name'] = this.parseName(html).name;
-        if (result['name'][0].toUpperCase() !== result['name'][0]) {
+        if (result['name'][0].toUpperCase() !== result['name'][0] || result['name'].indexOf(' ') !== -1) {
             return result;
         }
 
-        result['parameters'] = this.parseParameters(html);
+        result['parameters'] = {};
+        if (this.hasParameters(html)) {
+            result['parameters'] = this.parseParameters(html);
+        } else {
+            for (let heir of this.parseHeirs(html)) {
+                inheritances[heir] = result['name'];
+            }
+        }
 
+        return result;
+    }
+
+    private hasParameters(html: string): any {
+        return html.indexOf('<tbody>') !== -1;
+    }
+
+    private parseHeirs(html: string): any {
+        let result = [];
+        let startHeirsIndex = html.indexOf('<ul>');
+        if (startHeirsIndex !== -1) {
+            let heirsContainer = html.slice(startHeirsIndex + 4, html.indexOf('</ul>')).trim();
+            let endHeirIndex = heirsContainer.indexOf('</a>');
+            while (endHeirIndex < html.length && endHeirIndex !== -1) {
+                let startHeirIndex = heirsContainer.slice(0, endHeirIndex).lastIndexOf('">') + 2;
+                result.push(heirsContainer.slice(startHeirIndex, endHeirIndex).trim());
+                endHeirIndex = heirsContainer.indexOf('</a>', endHeirIndex + 4);
+            }
+        }
         return result;
     }
 

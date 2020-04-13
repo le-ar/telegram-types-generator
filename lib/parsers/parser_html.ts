@@ -1,5 +1,5 @@
 interface ParserHtml {
-    parseHtmlToObject(html: string): { [key: string]: any };
+    parseHtmlToObject(html: string, params?: any): { [key: string]: any };
 }
 
 interface ParserHtmlType {
