@@ -257,6 +257,14 @@ class BuilderSerializeFile {
         let result = `import { Serializer, ConstructorParams } from './serializer';\n`;
         result += `import ` + currentClassName + ` from '../entities/` + this.pascalCaseToSnakeCase(currentClassName) + `';\n`;
 
+        let init = '';
+        for (let importSerialize in imports) {
+            result += `import ` + imports[importSerialize] + ` from '` + importSerialize + `';\n`;
+            init += `let _` + imports[importSerialize] + ` = ` + imports[importSerialize] + ';\n';
+        }
+
+        result += '\n' + init;
+
         return result;
     }
 
