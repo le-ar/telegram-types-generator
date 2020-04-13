@@ -29,7 +29,7 @@ class Serializer<T> {
         for (let param in params) {
             let snakeCase =
                 param.replace(
-                    /\.?([A-Z])/g,
+                    /\\.?([A-Z])/g,
                     (x, y) => "_" + y.toLowerCase())
                     .replace(/^_/, "");
             this.paramsSnakeToCamelCase[snakeCase] = param;

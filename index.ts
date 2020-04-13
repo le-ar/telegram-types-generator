@@ -16,7 +16,7 @@ import BuilderSerializeFile from "./lib/builders/builder_serialize_file";
     let parserTypesBlocks = new ParserTypesBlocks(parserTypesBlock);
     let types = parserTypesBlocks.parseHtmlToObject((await telegramApi.getHtml()).trim());
 
-    
+
     BuilderSerializeFile.saveSerializerFile();
     for (let type of types['types']) {
         BuilderSerializeFile.buildFile(type);
