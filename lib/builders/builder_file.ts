@@ -14,7 +14,6 @@ class BuilderFile {
     }) {
         // Key is path. Value is Class Name
         let imports: { [key: string]: string } = {};
-        // Key is Param name. Value is type
         let params: {
             [key: string]: {
                 name: string;

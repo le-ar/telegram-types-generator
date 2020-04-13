@@ -6,6 +6,7 @@ import ParserTypesBlock from "./lib/parsers/parser_types_block";
 import ParserParameters from "./lib/parsers/parser_parameters";
 import ParserParameter from "./lib/parsers/parser_parameter";
 import BuilderFile from "./lib/builders/builder_file";
+import BuilderSerializeFile from "./lib/builders/builder_serialize_file";
 
 (async () => {
     let telegramApi = new TelegramApi();
@@ -15,7 +16,10 @@ import BuilderFile from "./lib/builders/builder_file";
     let parserTypesBlocks = new ParserTypesBlocks(parserTypesBlock);
     let types = parserTypesBlocks.parseHtmlToObject((await telegramApi.getHtml()).trim());
 
+    
+    BuilderSerializeFile.saveSerializerFile();
     for (let type of types['types']) {
+        BuilderSerializeFile.buildFile(type);
         BuilderFile.buildFile(type);
     }
 })()
