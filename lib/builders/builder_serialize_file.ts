@@ -181,7 +181,7 @@ class Serializer<T> {
             }
         }
 
-        return JSON.stringify(value);
+        return value;
     }
 }
 
