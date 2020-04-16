@@ -70,6 +70,15 @@ class Serializer<T> {
         if (type in Serializer.Serializers) {
             return Serializer.Serializers[type].fromJson(value);
         }
+        if (type.indexOf(' | ') !== -1) {
+            let params = type.split(' | ');
+            for (let currType of params) {
+                try {
+                    return this.deserialize(value, currType.trim());
+                } catch () { }
+            }
+            return null;
+        }
         if (type[type.length - 2] === '[' && type[type.length - 1] === ']') {
             if (!Array.isArray(value)) {
                 throw new Error('Wrong json for type array "' + this.className + '". Json: ' + JSON.stringify(value) + '\\n');
@@ -81,14 +90,6 @@ class Serializer<T> {
                 } catch (e) { }
             }
             return result;
-        }
-        if (type.indexOf(' | ') !== -1) {
-            let params = type.split(' | ');
-            for (let currType of params) {
-                if (currType in Serializer.Serializers) {
-                    return Serializer.Serializers[currType].fromJson(value);
-                }
-            }
         }
 
         return value;
@@ -180,12 +181,25 @@ class Serializer<T> {
             }
         }
 
+        if (!(this.checkJson(json))) {
+            throw new Error('Wrong json for type "' + this.className + '". Json: ' + json + '\\n');
+        }
+
         return json;
     }
 
     private serialize(value: any, type: string): any {
         if (type in Serializer.Serializers) {
             return Serializer.Serializers[type].toJsonObject(value);
+        }
+        if (type.indexOf(' | ') !== -1) {
+            let params = type.split(' | ');
+            for (let currType of params) {
+                try {
+                    return this.serialize(value, currType.trim());
+                } catch (e) { }
+            }
+            return null;
         }
         if (type[type.length - 2] === '[' && type[type.length - 1] === ']') {
             if (!Array.isArray(value)) {
@@ -198,14 +212,6 @@ class Serializer<T> {
                 } catch (e) { }
             }
             return result;
-        }
-        if (type.indexOf(' | ') !== -1) {
-            let params = type.split(' | ');
-            for (let currType of params) {
-                if (currType in Serializer.Serializers) {
-                    return Serializer.Serializers[currType].toJsonObject(value);
-                }
-            }
         }
 
         return value;
