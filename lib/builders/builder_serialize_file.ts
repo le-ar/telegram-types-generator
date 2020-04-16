@@ -75,7 +75,7 @@ class Serializer<T> {
             for (let currType of params) {
                 try {
                     return this.deserialize(value, currType.trim());
-                } catch () { }
+                } catch (e) { }
             }
             return null;
         }
