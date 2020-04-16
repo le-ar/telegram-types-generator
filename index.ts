@@ -45,6 +45,7 @@ let withMethodParams = process.argv.slice(2).indexOf('--mp') !== -1;
         for (let methodParam of methodsProps['types']) {
             methodParam.name += 'Param';
             methodParam.name = methodParam.name[0].toUpperCase() + methodParam.name.slice(1);
+            BuilderSerializeFile.buildFile(methodParam, {}, '../method_params/');
             BuilderFile.buildFile(methodParam, {}, '../entities/', '/method_params');
         }
     }

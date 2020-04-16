@@ -233,8 +233,14 @@ class BuilderSerializeFile {
                 }
             }
         },
-        inheritances: { [key: string]: string }
+        inheritances: { [key: string]: string },
+        entitiesDir?: string,
     ) {
+        let entitiesDirectory = '../entities/';
+        if (typeof entitiesDir === 'string') {
+            entitiesDirectory = entitiesDir;
+        }
+
         // Key is path. Value is Class Name
         let imports: { [key: string]: string } = {};
         let params: {
@@ -244,7 +250,7 @@ class BuilderSerializeFile {
                 description: string;
                 optional: boolean;
             }
-        } = this.convertParamsAndAddImport(type.name, JSON.parse(JSON.stringify(type.parameters)), imports);
+        } = this.convertParamsAndAddImport(type.name, JSON.parse(JSON.stringify(type.parameters)), imports, entitiesDirectory);
 
         let reverseInheritances: any = {};
         for (let heir in inheritances) {
@@ -259,7 +265,7 @@ class BuilderSerializeFile {
 
         let result = '';
 
-        result = this.buildImports(type.name, imports, reverseInheritances[type.name]);
+        result = this.buildImports(type.name, imports, reverseInheritances[type.name], entitiesDirectory);
         result += '\n';
         result += this.buildConstructorParams(params, reverseInheritances[type.name]);
         result += '\n';
@@ -288,19 +294,21 @@ class BuilderSerializeFile {
                 optional: boolean;
             }
         },
-        imports: { [key: string]: string }): {
-            [key: string]: {
-                name: string;
-                type: string;
-                description: string;
-                optional: boolean;
-            }
-        } {
+        imports: { [key: string]: string },
+        entitiesDir: string,
+    ): {
+        [key: string]: {
+            name: string;
+            type: string;
+            description: string;
+            optional: boolean;
+        }
+    } {
         let newParams = {};
         for (let param in params) {
             newParams[param] = params[param];
             newParams[param].name = this.snakeCaseToCamelCase(newParams[param].name);
-            newParams[param].type = this.parseParamTypeAndAddImort(currentTypeName, params[param].type.trim(), imports);
+            newParams[param].type = this.parseParamTypeAndAddImort(currentTypeName, params[param].type.trim(), imports, entitiesDir);
         }
         return newParams;
     }
@@ -308,7 +316,8 @@ class BuilderSerializeFile {
     private static parseParamTypeAndAddImort(
         currentTypeName: string,
         type: string,
-        imports: { [key: string]: string }
+        imports: { [key: string]: string },
+        entitiesDir: string,
     ) {
         if (type === 'Integer' || type === 'Float' || type === 'Float number') {
             return 'number';
@@ -321,12 +330,16 @@ class BuilderSerializeFile {
         }
 
         if (type.startsWith('Array of')) {
-            return this.parseParamTypeAndAddImort(currentTypeName, type.slice(8).trim(), imports) + '[]';
+            if (type.indexOf(' or ') !== -1 || type.indexOf(' and ') !== -1) {
+                let splitted = type.slice(8).trim().split(/ or | and /);
+                return splitted.map((el) => this.parseParamTypeAndAddImort(currentTypeName, 'Array of ' + el.trim(), imports, entitiesDir)).join(' | ');
+            }
+            return this.parseParamTypeAndAddImort(currentTypeName, type.slice(8).trim(), imports, entitiesDir) + '[]';
         }
 
-        if (type.indexOf(' or ') !== -1) {
-            let splitted = type.split(' or ');
-            return splitted.map((el) => this.parseParamTypeAndAddImort(currentTypeName, el.trim(), imports)).join(' | ');
+        if (type.indexOf(' or ') !== -1 || type.indexOf(' and ') !== -1) {
+            let splitted = type.split(/ or | and /);
+            return splitted.map((el) => this.parseParamTypeAndAddImort(currentTypeName, el.trim(), imports, entitiesDir)).join(' | ');
         }
 
         let endIndexOfType = type.indexOf('</a>');
@@ -345,10 +358,11 @@ class BuilderSerializeFile {
     private static buildImports(
         currentClassName: string,
         imports: { [key: string]: string },
-        reverseInheritances: string[]
+        reverseInheritances: string[],
+        entitiesDir: string
     ): string {
         let result = `import { Serializer, ConstructorParams } from './serializer';\n`;
-        result += `import ` + currentClassName + ` from '../entities/` + this.pascalCaseToSnakeCase(currentClassName) + `';\n`;
+        result += `import ` + currentClassName + ` from '` + entitiesDir + this.pascalCaseToSnakeCase(currentClassName) + `';\n`;
 
         let init = '';
         for (let importSerialize in imports) {
