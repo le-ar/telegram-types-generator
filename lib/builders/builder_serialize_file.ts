@@ -131,7 +131,11 @@ class Serializer<T> {
         let formData = new FormData();
         let serialized = this.toJsonObject(model, formData);
         for (let param in serialized) {
-            formData.set(param, JSON.stringify(serialized[param]));
+            let val = serialized[param];
+            if (typeof val === 'object') {
+                val = JSON.stringify(val);
+            }
+            formData.set(param, val);
         }
         return formData;
     }
