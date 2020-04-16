@@ -21,6 +21,8 @@ or
 
 Run ```telegram-types-generator``` in directory where you want to generate classes
 
+Run ```telegram-types-generator --mp``` to generate with methods params
+
 ## Example Serializer
 
 ```typescript

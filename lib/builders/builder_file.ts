@@ -1,6 +1,27 @@
 var fs = require('fs');
 
+let InputFile = `class InputFile {
+    name: string;
+    file: Buffer;
+
+    constructor(name: string, file: Buffer) {
+        this.name = name;
+        this.file = file;
+    }
+}
+
+export default InputFile;`;
+
 class BuilderFile {
+    private constructor() { }
+
+    static saveInputFileClass() {
+        if (!fs.existsSync(process.cwd() + '/entities')) {
+            fs.mkdirSync(process.cwd() + '/entities');
+        }
+        fs.writeFileSync(process.cwd() + '/entities/input_file.ts', InputFile);
+    }
+
     static buildFile(
         type: {
             name: string,
@@ -13,8 +34,19 @@ class BuilderFile {
                 }
             }
         },
-        inheritances: { [key: string]: string }
+        inheritances: { [key: string]: string },
+        entitiesDir?: string,
+        outputDir?: string,
     ) {
+        let entitiesDirectory = './';
+        if (typeof entitiesDir === 'string') {
+            entitiesDirectory = entitiesDir;
+        }
+        let outputDirectory = '/entities';
+        if (typeof outputDir === 'string') {
+            outputDirectory = outputDir;
+        }
+
         // Key is path. Value is Class Name
         let imports: { [key: string]: string } = {};
         let params: {
@@ -29,16 +61,20 @@ class BuilderFile {
         for (let param in type.parameters) {
             params[param] = type.parameters[param];
             params[param].name = this.snakeCaseToCamelCase(params[param].name);
-            params[param].type = this.parseParamTypeAndAddImort(type.name, type.parameters[param].type, imports);
+            params[param].type = this.parseParamTypeAndAddImort(type.name, type.parameters[param].type, imports, entitiesDirectory);
         }
 
         let fileText = this.build(type.name, imports, params, inheritances);
-        this.saveToFile(process.cwd() + '/entities/' + this.pascalCaseToSnakeCase(type.name) + '.ts', fileText);
+        this.saveToFile(process.cwd() + outputDirectory + '/' + this.pascalCaseToSnakeCase(type.name) + '.ts', fileText, outputDirectory);
     }
 
-    private static saveToFile(fileName: string, fileText: string) {
-        if (!fs.existsSync(process.cwd() + '/entities')) {
-            fs.mkdirSync(process.cwd() + '/entities');
+    private static saveToFile(
+        fileName: string,
+        fileText: string,
+        outputDir: string
+    ) {
+        if (!fs.existsSync(process.cwd() + outputDir)) {
+            fs.mkdirSync(process.cwd() + outputDir);
         }
         fs.writeFileSync(fileName, fileText);
     }
@@ -203,7 +239,8 @@ class BuilderFile {
     private static parseParamTypeAndAddImort(
         name: string,
         type: string,
-        imports: { [key: string]: string }
+        imports: { [key: string]: string },
+        entitiesDir: string,
     ) {
         if (type === 'Integer' || type === 'Float' || type === 'Float number') {
             return 'number';
@@ -219,12 +256,16 @@ class BuilderFile {
         }
 
         if (type.startsWith('Array of')) {
-            return this.parseParamTypeAndAddImort(name, type.slice(8).trim(), imports) + '[]';
+            if (type.indexOf(' or ') !== -1 || type.indexOf(' and ') !== -1) {
+                let splitted = type.slice(8).trim().split(/ or | and /);
+                return splitted.map((el) => this.parseParamTypeAndAddImort(name, 'Array of ' + el.trim(), imports, entitiesDir)).join(' | ');
+            }
+            return this.parseParamTypeAndAddImort(name, type.slice(8).trim(), imports, entitiesDir) + '[]';
         }
 
-        if (type.indexOf(' or ') !== -1) {
-            let splitted = type.split(' or ');
-            return splitted.map((el) => this.parseParamTypeAndAddImort(name, el.trim(), imports)).join(' | ');
+        if (type.indexOf(' or ') !== -1 || type.indexOf(' and ') !== -1) {
+            let splitted = type.split(/ or | and /);
+            return splitted.map((el) => this.parseParamTypeAndAddImort(name, el.trim(), imports, entitiesDir)).join(' | ');
         }
 
         let endIndexOfType = type.indexOf('</a>');
@@ -233,10 +274,7 @@ class BuilderFile {
         }
         let paramType = type.slice(type.indexOf('>') + 1, endIndexOfType).trim();
         if (paramType !== name) {
-            if (paramType === 'InputFile') {
-                return 'Buffer';
-            }
-            imports['./' + this.pascalCaseToSnakeCase(paramType)] = paramType;
+            imports[entitiesDir + this.pascalCaseToSnakeCase(paramType)] = paramType;
         }
         return paramType;
     }
