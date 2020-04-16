@@ -1,7 +1,7 @@
 var fs = require('fs');
 
 let Serializer = `import InputFile from '../entities/input_file';
-import * as FormData from 'form-data';
+import FormData from 'formdata-node';
 
 type ConstructorParams = {
     [key: string]: {
