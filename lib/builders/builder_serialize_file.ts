@@ -177,7 +177,8 @@ class Serializer<T> {
                     }
                     formData.append('file__' + (++countFiles), newParam.file, newParam.name);
                     formData.set('files__count', countFiles.toString());
-                    json[this.paramsCamelToSnakeCase[paramName]] = 'attach://file__' + countFiles;\n`;
+                    json[this.paramsCamelToSnakeCase[paramName]] = 'attach://file__' + countFiles;
+                    continue;\n`;
     } else {
         result += `                    throw new Error('You can\\'t serialize Buffer to json. Use "multipart/form-data" instead');\n`;
     }
