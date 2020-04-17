@@ -1,5 +1,8 @@
 Typescript classes code generator for [Telegram types](https://core.telegram.org/bots/api)
 
+[![patreon](https://img.shields.io/endpoint?url=https%3A%2F%2Fshieldsio-patreon.herokuapp.com%2Fle_ar%2Fendel)](https://www.patreon.com/le_ar)
+[![Liberapay giving](https://img.shields.io/liberapay/receives/le-ar)](https://liberapay.com/le-ar/donate)
+
 ### Default output dirs:
 ```./etities/``` for Classes
 
