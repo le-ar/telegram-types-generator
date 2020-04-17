@@ -1,9 +1,12 @@
 var fs = require('fs');
 
-let Serializer = `import InputFile from '../entities/input_file';
-import FormData from 'formdata-node';
+function getSerializer(withSerializeToFormData: boolean): string {
+    let result: string = `import InputFile from '../entities/input_file';\n`;
+    if (withSerializeToFormData) {
+        result += `import FormData from 'formdata-node';\n`;
+    }
 
-type ConstructorParams = {
+    result += `\ntype ConstructorParams = {
     [key: string]: {
         type: string,
         required: boolean,
@@ -126,9 +129,10 @@ class Serializer<T> {
             ok: true,
             params: snakeParams
         };
-    }
+    }\n\n`;
 
-    toFormData(model: T): FormData {
+    if (withSerializeToFormData) {
+        result += `    toFormData(model: T): FormData {
         let formData = new FormData();
         let serialized = this.toJsonObject(model, formData);
         for (let param in serialized) {
@@ -139,22 +143,29 @@ class Serializer<T> {
             formData.set(param, val);
         }
         return formData;
+    }\n\n`;
     }
 
-    toJsonString(model: T): string {
+    result += `    toJsonString(model: T): string {
         return JSON.stringify(this.toJsonObject(model));
+    }\n\n`;
+
+    if (withSerializeToFormData) {
+        result += `    toJsonObject(model: T, formData?: FormData): { [key: string]: any } {\n`;
+    } else {
+        result += `    toJsonObject(model: T): { [key: string]: any } {\n`;
     }
 
-    toJsonObject(model: T, formData?: FormData): { [key: string]: any } {
-        let json: { [key: string]: any } = {};
+    result += `        let json: { [key: string]: any } = {};
         let jsonModel: { [key: string]: any } = model;
 
         for (let paramName in this.constructorParams) {
             let param = this.constructorParams[paramName];
             if (typeof jsonModel[paramName] !== 'undefined' && jsonModel[paramName] !== null) {
                 let newParam = jsonModel[paramName];
-                if (newParam instanceof InputFile) {
-                    if (!(formData instanceof FormData)) {
+                if (newParam instanceof InputFile) {\n`;
+    if (withSerializeToFormData) {
+        result += `                    if (!(formData instanceof FormData)) {
                         throw new Error('You can\\'t serialize Buffer to json. Use "multipart/form-data" instead');
                     }
                     let countFiles = 0;
@@ -166,9 +177,11 @@ class Serializer<T> {
                     }
                     formData.append('file__' + (++countFiles), newParam.file, newParam.name);
                     formData.set('files__count', countFiles.toString());
-                    json[this.paramsCamelToSnakeCase[paramName]] = 'attach://file__' + countFiles;
-                    continue;
-                }
+                    json[this.paramsCamelToSnakeCase[paramName]] = 'attach://file__' + countFiles;\n`;
+    } else {
+        result += `                    throw new Error('You can\\'t serialize Buffer to json. Use "multipart/form-data" instead');\n`;
+    }
+    result += `                }
                 try {
                     newParam = this.serialize(newParam, param.type);
                     if (newParam === null) {
@@ -219,16 +232,19 @@ class Serializer<T> {
 }
 
 export default Serializer;
-export { Serializer, ConstructorParams };`
+export { Serializer, ConstructorParams }; `;
+
+    return result;
+}
 
 class BuilderSerializeFile {
     private constructor() { }
 
-    static saveSerializerFile() {
+    static saveSerializerFile(withSerializeToFormData: boolean) {
         if (!fs.existsSync(process.cwd() + '/serialize')) {
             fs.mkdirSync(process.cwd() + '/serialize');
         }
-        fs.writeFileSync(process.cwd() + '/serialize/serializer.ts', Serializer);
+        fs.writeFileSync(process.cwd() + '/serialize/serializer.ts', getSerializer(withSerializeToFormData));
     }
 
     static buildFile(

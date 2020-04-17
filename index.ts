@@ -13,6 +13,7 @@ import ParserMethodsBlock from "./lib/parsers/parser_methods_block";
 import ParserMethodsBlocks from "./lib/parsers/parser_methods_blocks";
 
 let withMethodParams = process.argv.slice(2).indexOf('--mp') !== -1;
+let withSerializeToFormData = process.argv.slice(2).indexOf('--fd') !== -1;
 
 (async () => {
     let telegramApi = new TelegramApi();
@@ -32,7 +33,7 @@ let withMethodParams = process.argv.slice(2).indexOf('--mp') !== -1;
     let types = parserTypesBlocks.parseHtmlToObject((await telegramApi.getHtml()).trim(), inheritances);
 
     BuilderFile.saveInputFileClass();
-    BuilderSerializeFile.saveSerializerFile();
+    BuilderSerializeFile.saveSerializerFile(withSerializeToFormData);
 
     for (let type of types['types']) {
         BuilderSerializeFile.buildFile(type, inheritances);
