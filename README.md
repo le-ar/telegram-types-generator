@@ -1,6 +1,8 @@
-<h1 align="center">Typescript classes code generator for <a href="https://core.telegram.org/bots/api">Telegram types</a></h1>
+<h1 align="center">Typescript classes code generator</h1>
 
 <div align="center">
+
+Typescript classes code generator for <a href="https://core.telegram.org/bots/api">Telegram types</a>
 
 ![David](https://img.shields.io/david/le-ar/telegram-types-generator)
 ![NPM](https://img.shields.io/npm/l/telegram-types-generator)
